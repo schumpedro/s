@@ -1,4 +1,3 @@
-
 const form = document.querySelector('#form-pokemon');
 const feedback = document.querySelector('#feedback');
 const listaCards = document.querySelector('#lista-cards');
@@ -105,7 +104,17 @@ function criarCardPokemon(nomePokemon, imagem, tipos, combatPower, nomeTreinador
     infoTreinador.className = 'card-pokemon-info';
     infoTreinador.textContent = `Treinador: ${nomeTreinador || 'Sem treinador'}`;
 
-    card.append(img, nomeCard, infoTipo, infoCP, infoTreinador);
+    const btnRemover = document.createElement('button');
+    btnRemover.type = 'button';
+    btnRemover.className = 'btn-remover';
+    btnRemover.textContent = 'x';
+    btnRemover.title = 'Remover';
+    btnRemover.setAttribute('aria-label', `Remover ${nomePokemon}`);
+    btnRemover.addEventListener('click', function () {
+        card.remove();
+    });
+
+    card.append(btnRemover, img, nomeCard, infoTipo, infoCP, infoTreinador);
     listaCards.prepend(card);
 }
 
@@ -182,13 +191,11 @@ form.addEventListener('submit', function (event) {
         return;
     }
 
-    const dadosPokemon = pokemonEncontrado;
-
     criarCardPokemon(
-        dadosPokemon.name,
-        extrairImagemPokemon(dadosPokemon),
-        extrairTipoPokemon(dadosPokemon),
-        extrairCombatPower(dadosPokemon),
+        pokemonEncontrado.name,
+        extrairImagemPokemon(pokemonEncontrado),
+        extrairTipoPokemon(pokemonEncontrado),
+        extrairCombatPower(pokemonEncontrado),
         nomeTreinador
     );
 

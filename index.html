@@ -17,8 +17,8 @@
             </div>
 
             <div class="campo">
-                <label for="treinador">Nome do Treinador (opcional):</label>
-                <input type="text" id="treinador" placeholder="Seu nome">
+                <label for="treinador">Nome do Treinador:</label>
+                <input type="text" id="treinador" placeholder="Seu nome" required>
             </div>
 
             <div class="campo">
@@ -27,11 +27,12 @@
             </div>
 
             <div class="campo">
-                <label for="cp">Combat Power (automático):</label>
-                <input type="number" id="cp" readonly>
+                <label for="CP">Combat Power (automático):</label>
+                <input type="number" id="CP" readonly>
             </div>
 
             <button type="submit">Cadastrar na Arena</button>
+            <button type="button" id="botaolimpar">Limpar</button>
             <p id="feedback" aria-live="polite"></p>
         </form>
 
