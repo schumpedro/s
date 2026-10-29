@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Cadastro de Pokémons</h1>
+        <h1>⚡ <span class="titulo">Cadastro de Pokémons</span></h1>
 
         <form id="form-pokemon">
             <div class="campo">
@@ -31,11 +31,14 @@
                 <input type="number" id="CP" readonly>
             </div>
 
-            <button type="submit">Cadastrar na Arena</button>
-            <button type="button" id="botaolimpar">Limpar</button>
+            <button type="submit">✅ Cadastrar na Arena</button>
+            <button type="button" id="botaolimpar">🧹 Limpar</button>
+            <button type="button" id="botaobatalha">⚔️ Batalhar</button>
+            <button type="button" id="botaolimpararena">🗑️ Limpar arena</button>
             <p id="feedback" aria-live="polite"></p>
         </form>
 
+        <h2 id="contador">Arena (0)</h2>
         <div id="lista-cards" class="arena-grid"></div>
     </div>
 

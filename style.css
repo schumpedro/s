@@ -1,6 +1,11 @@
 :root {
-    --bg-color: #f4f4f9;
-    --text-color: #333;
+    --bg-color: #0a0a0f;
+    --surface: #161b2e;
+    --surface-2: #0f1322;
+    --border: #2a3150;
+    --text-color: #e5e7eb;
+    --text-muted: #9ca3af;
+    --accent: #e74c3c;
 }
 
 *,
@@ -12,9 +17,12 @@
 body {
     font-family: Arial, sans-serif;
     background-color: var(--bg-color);
+    background-image: radial-gradient(circle at top, #1a1f3a, #0a0a0f 60%);
+    background-attachment: fixed;
     color: var(--text-color);
     margin: 0;
     padding: 20px;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
 }
@@ -26,13 +34,28 @@ body {
 
 h1 {
     text-align: center;
+    letter-spacing: 1px;
+}
+
+.titulo {
+    background: linear-gradient(90deg, #facc15, #e74c3c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+h2 {
+    font-size: 1.1em;
+    color: var(--text-muted);
+    padding-left: 8px;
 }
 
 form {
-    background: #fff;
+    background: var(--surface);
+    border: 1px solid var(--border);
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
     margin-bottom: 20px;
 }
 
@@ -42,28 +65,48 @@ form {
     flex-direction: column;
 }
 
+label {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
 input {
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--text-color);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     margin-top: 5px;
 }
 
+input::placeholder {
+    color: #6b7280;
+}
+
 input:focus-visible {
-    outline: 2px solid #e74c3c;
+    outline: 2px solid var(--accent);
     outline-offset: 1px;
 }
 
 input[readonly] {
-    background-color: #eee;
+    background-color: #0a0d18;
+    color: var(--text-muted);
+}
+
+button {
+    transition: transform 0.15s ease, background 0.2s ease;
+}
+
+button:active {
+    transform: scale(0.98);
 }
 
 button[type="submit"] {
-    background: #e74c3c;
+    background: var(--accent);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px 20px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
     width: 100%;
@@ -74,29 +117,54 @@ button[type="submit"]:hover {
 }
 
 button[type="submit"]:disabled {
-    background: #999;
+    background: #444;
     cursor: not-allowed;
 }
 
 button:focus-visible {
-    outline: 2px solid #333;
+    outline: 2px solid #fff;
     outline-offset: 2px;
 }
 
-#botaolimpar {
-    background: #555;
-    color: white;
+#botaolimpar,
+#botaobatalha,
+#botaolimpararena {
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px 20px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
     width: 100%;
     margin-top: 10px;
 }
 
+#botaolimpar {
+    background: #374151;
+    color: white;
+}
+
 #botaolimpar:hover {
-    background: #333;
+    background: #4b5563;
+}
+
+#botaobatalha {
+    background: #d4a800;
+    color: #111;
+}
+
+#botaobatalha:hover {
+    background: #f0c000;
+}
+
+#botaolimpararena {
+    background: transparent;
+    color: #f87171;
+    border: 1px solid #7f1d1d;
+}
+
+#botaolimpararena:hover {
+    background: #7f1d1d;
+    color: #fff;
 }
 
 #feedback {
@@ -117,7 +185,7 @@ button:focus-visible {
 .card-pokemon {
     padding: 15px;
     border: 2px solid #4f46e5;
-    border-radius: 10px;
+    border-radius: 12px;
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -129,8 +197,24 @@ button:focus-visible {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.card-pokemon.novo {
+    animation: aparecer 0.4s ease;
+}
+
+@keyframes aparecer {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
 .card-pokemon:hover {
     transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
 }
 
 .card-pokemon-img {
@@ -178,4 +262,5 @@ button:focus-visible {
 
 .card-pokemon.campeao:hover {
     transform: scale(1.05) translateY(-4px);
+    box-shadow: 0 0 15px 5px gold;
 }

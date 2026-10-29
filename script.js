@@ -1,17 +1,28 @@
 const form = document.querySelector('#form-pokemon');
 const feedback = document.querySelector('#feedback');
 const listaCards = document.querySelector('#lista-cards');
+const contador = document.querySelector('#contador');
 const treinador = document.querySelector('#treinador');
 const nome = document.querySelector('#nome');
 const limpar = document.querySelector('#botaolimpar');
+const batalha = document.querySelector('#botaobatalha');
+const limparArena = document.querySelector('#botaolimpararena');
 const tipo = document.querySelector('#tipo');
 const cp = document.querySelector('#CP');
 
 let debounceBusca;
 let requisicaoAtual = 0;
 let pokemonEncontrado = null;
+let arena = [];
 
 const URL_POKEAPI = 'https://pokeapi.co/api/v2/pokemon';
+const CHAVE_STORAGE = 'arena-pokemon';
+
+const COR_ERRO = '#f87171';
+const COR_SUCESSO = '#4ade80';
+const COR_INFO = '#a5b4fc';
+
+/* ---------- API ---------- */
 
 async function buscarDadosPokemon(nomePokemon) {
     const nomeFormatado = nomePokemon.toLowerCase().trim();
@@ -44,14 +55,43 @@ function extrairTipoPokemon(dadosPokemon) {
     return dadosPokemon.types.map(item => item.type.name);
 }
 
+// CP = soma de todos os stats base (HP, ataque, defesa, etc.)
 function extrairCombatPower(dadosPokemon) {
-    return dadosPokemon?.base_experience ?? 0;
+    if (!dadosPokemon?.stats) {
+        return 0;
+    }
+
+    return dadosPokemon.stats.reduce((total, item) => total + item.base_stat, 0);
+}
+
+/* ---------- Armazenamento ---------- */
+
+function salvarArena() {
+    try {
+        localStorage.setItem(CHAVE_STORAGE, JSON.stringify(arena));
+    } catch (error) {
+        console.log('Não foi possível salvar a arena:', error);
+    }
+}
+
+function carregarArena() {
+    try {
+        const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE));
+        return Array.isArray(salvo) ? salvo : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function atualizarContador() {
+    contador.textContent = `Arena (${arena.length})`;
 }
 
 function pokemonJaNaArena(id) {
-    return Array.from(listaCards.querySelectorAll('.card-pokemon'))
-        .some(card => card.dataset.id === String(id));
+    return arena.some(pokemon => pokemon.id === id);
 }
+
+/* ---------- Cards ---------- */
 
 function aplicarEstiloPorTipo(card, tipos) {
     const cores = {
@@ -81,10 +121,17 @@ function aplicarEstiloPorTipo(card, tipos) {
     card.style.background = `linear-gradient(145deg, ${cor}33, #111624 75%)`;
 }
 
-function criarCardPokemon(id, nomePokemon, imagem, tipos, combatPower, nomeTreinador) {
+function criarCardPokemon(pokemon, animar) {
+    const { id, nome: nomePokemon, imagem, tipos, cp: combatPower, treinador: nomeTreinador } = pokemon;
+
     const card = document.createElement('div');
     card.className = 'card-pokemon';
     card.dataset.id = id;
+
+    if (animar) {
+        card.classList.add('novo');
+        card.addEventListener('animationend', () => card.classList.remove('novo'));
+    }
 
     aplicarEstiloPorTipo(card, tipos);
 
@@ -117,14 +164,32 @@ function criarCardPokemon(id, nomePokemon, imagem, tipos, combatPower, nomeTrein
     btnRemover.title = 'Remover';
     btnRemover.setAttribute('aria-label', `Remover ${nomePokemon}`);
     btnRemover.addEventListener('click', function () {
+        arena = arena.filter(item => item.id !== id);
         card.remove();
+        salvarArena();
+        atualizarContador();
     });
 
     card.append(btnRemover, img, nomeCard, infoTipo, infoCP, infoTreinador);
-    listaCards.prepend(card);
+    return card;
 }
 
-function mostrarFeedback(mensagem, cor = '#e0e7ff') {
+function adicionarPokemon(pokemon) {
+    arena.unshift(pokemon);
+    listaCards.prepend(criarCardPokemon(pokemon, true));
+    salvarArena();
+    atualizarContador();
+}
+
+function renderizarArena() {
+    listaCards.innerHTML = '';
+    arena.forEach(pokemon => listaCards.append(criarCardPokemon(pokemon, false)));
+    atualizarContador();
+}
+
+/* ---------- Ações ---------- */
+
+function mostrarFeedback(mensagem, cor = COR_INFO) {
     feedback.textContent = mensagem;
     feedback.style.color = cor;
 }
@@ -137,6 +202,57 @@ function limparCampos() {
     mostrarFeedback('');
 }
 
+function esvaziarArena() {
+    if (arena.length === 0) {
+        mostrarFeedback('A arena já está vazia.', COR_INFO);
+        return;
+    }
+
+    if (!confirm('Remover todos os Pokémons da arena?')) {
+        return;
+    }
+
+    arena = [];
+    renderizarArena();
+    salvarArena();
+    mostrarFeedback('Arena esvaziada.', COR_INFO);
+}
+
+function batalhar() {
+    listaCards.querySelectorAll('.card-pokemon')
+        .forEach(card => card.classList.remove('campeao'));
+
+    if (arena.length < 2) {
+        mostrarFeedback('Cadastre pelo menos 2 Pokémons para batalhar.', COR_ERRO);
+        return;
+    }
+
+    const maiorCP = Math.max(...arena.map(pokemon => pokemon.cp));
+    const campeoes = arena.filter(pokemon => pokemon.cp === maiorCP);
+
+    campeoes.forEach(pokemon => {
+        const card = listaCards.querySelector(`[data-id="${pokemon.id}"]`);
+        if (card) {
+            card.classList.add('campeao');
+        }
+    });
+
+    if (campeoes.length > 1) {
+        mostrarFeedback(`Empate! ${campeoes.length} Pokémons com CP ${maiorCP}.`, COR_INFO);
+        return;
+    }
+
+    const { nome: nomeCampeao, treinador: treinadorCampeao } = campeoes[0];
+    const nomeFormatado = nomeCampeao.charAt(0).toUpperCase() + nomeCampeao.slice(1);
+
+    mostrarFeedback(
+        `🏆 ${nomeFormatado} (${treinadorCampeao || 'Sem treinador'}) venceu com CP ${maiorCP}!`,
+        COR_SUCESSO
+    );
+}
+
+/* ---------- Eventos ---------- */
+
 nome.addEventListener('input', function () {
     const valor = nome.value.trim();
 
@@ -147,11 +263,11 @@ nome.addEventListener('input', function () {
     if (valor.length < 3) {
         tipo.value = '';
         cp.value = '';
-        mostrarFeedback('Digite pelo menos 3 caracteres.', '#f87171');
+        mostrarFeedback('Digite pelo menos 3 caracteres.', COR_ERRO);
         return;
     }
 
-    mostrarFeedback('Buscando Pokémon...', '#a5b4fc');
+    mostrarFeedback('Buscando Pokémon...', COR_INFO);
 
     const idRequisicao = requisicaoAtual;
 
@@ -165,20 +281,17 @@ nome.addEventListener('input', function () {
         if (!dadosApi) {
             tipo.value = '';
             cp.value = '';
-            mostrarFeedback('Pokémon não encontrado.', '#f87171');
+            mostrarFeedback('Pokémon não encontrado.', COR_ERRO);
             return;
         }
 
         pokemonEncontrado = dadosApi;
 
-        const tiposPokemon = extrairTipoPokemon(dadosApi);
-        const combatPower = extrairCombatPower(dadosApi);
-
         nome.value = dadosApi.name;
-        tipo.value = tiposPokemon.join(', ');
-        cp.value = combatPower;
+        tipo.value = extrairTipoPokemon(dadosApi).join(', ');
+        cp.value = extrairCombatPower(dadosApi);
 
-        mostrarFeedback('Pokémon encontrado!', '#4ade80');
+        mostrarFeedback('Pokémon encontrado!', COR_SUCESSO);
     }, 500);
 });
 
@@ -188,31 +301,38 @@ form.addEventListener('submit', function (event) {
     const nomeTreinador = treinador.value.trim();
 
     if (!nomeTreinador) {
-        mostrarFeedback('Informe o nome do treinador.', '#f87171');
+        mostrarFeedback('Informe o nome do treinador.', COR_ERRO);
         return;
     }
 
     if (!pokemonEncontrado || nome.value.toLowerCase() !== pokemonEncontrado.name) {
-        mostrarFeedback('Busque um Pokémon válido antes de cadastrar.', '#f87171');
+        mostrarFeedback('Busque um Pokémon válido antes de cadastrar.', COR_ERRO);
         return;
     }
 
     if (pokemonJaNaArena(pokemonEncontrado.id)) {
-        mostrarFeedback('Esse Pokémon já está na arena.', '#f87171');
+        mostrarFeedback('Esse Pokémon já está na arena.', COR_ERRO);
         return;
     }
 
-    criarCardPokemon(
-        pokemonEncontrado.id,
-        pokemonEncontrado.name,
-        extrairImagemPokemon(pokemonEncontrado),
-        extrairTipoPokemon(pokemonEncontrado),
-        extrairCombatPower(pokemonEncontrado),
-        nomeTreinador
-    );
+    adicionarPokemon({
+        id: pokemonEncontrado.id,
+        nome: pokemonEncontrado.name,
+        imagem: extrairImagemPokemon(pokemonEncontrado),
+        tipos: extrairTipoPokemon(pokemonEncontrado),
+        cp: extrairCombatPower(pokemonEncontrado),
+        treinador: nomeTreinador
+    });
 
-    mostrarFeedback('Pokémon cadastrado com sucesso!', '#4ade80');
+    mostrarFeedback('Pokémon cadastrado com sucesso!', COR_SUCESSO);
     pokemonEncontrado = null;
 });
 
 limpar.addEventListener('click', limparCampos);
+batalha.addEventListener('click', batalhar);
+limparArena.addEventListener('click', esvaziarArena);
+
+/* ---------- Início ---------- */
+
+arena = carregarArena();
+renderizarArena();
