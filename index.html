@@ -8,17 +8,19 @@
 </head>
 <body>
     <div class="container">
-        <h1>⚡ <span class="titulo">Cadastro de Pokémons</span></h1>
+        <h1>🐉 <span class="titulo">Cadastre seu Pokemon hilário!</span></h1>
 
         <form id="form-pokemon">
-            <div class="campo">
+            <div class="campo campo-busca">
                 <label for="nome">Nome do Pokémon:</label>
                 <input type="text" id="nome" placeholder="Ex: pikachu" autocomplete="off" required>
+                <ul id="sugestoes" class="sugestoes" hidden></ul>
             </div>
 
-            <div class="campo">
+            <div class="campo campo-busca">
                 <label for="treinador">Nome do Treinador:</label>
-                <input type="text" id="treinador" placeholder="Seu nome" required>
+                <input type="text" id="treinador" placeholder="Ex: pedro hilário" autocomplete="off" required>
+                <ul id="sugestoes-treinador" class="sugestoes" hidden></ul>
             </div>
 
             <div class="campo">

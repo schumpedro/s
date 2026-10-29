@@ -4,6 +4,8 @@ const listaCards = document.querySelector('#lista-cards');
 const contador = document.querySelector('#contador');
 const treinador = document.querySelector('#treinador');
 const nome = document.querySelector('#nome');
+const sugestoesPokemon = document.querySelector('#sugestoes');
+const sugestoesTreinador = document.querySelector('#sugestoes-treinador');
 const limpar = document.querySelector('#botaolimpar');
 const batalha = document.querySelector('#botaobatalha');
 const limparArena = document.querySelector('#botaolimpararena');
@@ -14,9 +16,15 @@ let debounceBusca;
 let requisicaoAtual = 0;
 let pokemonEncontrado = null;
 let arena = [];
+let recentes = [];
+let treinadores = [];
 
 const URL_POKEAPI = 'https://pokeapi.co/api/v2/pokemon';
 const CHAVE_STORAGE = 'arena-pokemon';
+const CHAVE_RECENTES = 'arena-pokemon-recentes';
+const CHAVE_TREINADORES = 'arena-pokemon-treinadores';
+const MAX_RECENTES = 10;
+const MAX_SUGESTOES = 6;
 
 const COR_ERRO = '#f87171';
 const COR_SUCESSO = '#4ade80';
@@ -66,21 +74,39 @@ function extrairCombatPower(dadosPokemon) {
 
 /* ---------- Armazenamento ---------- */
 
-function salvarArena() {
+function lerStorage(chave) {
     try {
-        localStorage.setItem(CHAVE_STORAGE, JSON.stringify(arena));
-    } catch (error) {
-        console.log('Não foi possível salvar a arena:', error);
-    }
-}
-
-function carregarArena() {
-    try {
-        const salvo = JSON.parse(localStorage.getItem(CHAVE_STORAGE));
+        const salvo = JSON.parse(localStorage.getItem(chave));
         return Array.isArray(salvo) ? salvo : [];
     } catch (error) {
         return [];
     }
+}
+
+function gravarStorage(chave, valor) {
+    try {
+        localStorage.setItem(chave, JSON.stringify(valor));
+    } catch (error) {
+        console.log('Não foi possível salvar:', error);
+    }
+}
+
+function salvarArena() {
+    gravarStorage(CHAVE_STORAGE, arena);
+}
+
+function salvarRecente(nomePokemon) {
+    recentes = [nomePokemon, ...recentes.filter(item => item !== nomePokemon)]
+        .slice(0, MAX_RECENTES);
+    gravarStorage(CHAVE_RECENTES, recentes);
+}
+
+function salvarTreinador(nomeTreinador) {
+    treinadores = [
+        nomeTreinador,
+        ...treinadores.filter(item => item.toLowerCase() !== nomeTreinador.toLowerCase())
+    ].slice(0, MAX_RECENTES);
+    gravarStorage(CHAVE_TREINADORES, treinadores);
 }
 
 function atualizarContador() {
@@ -90,6 +116,104 @@ function atualizarContador() {
 function pokemonJaNaArena(id) {
     return arena.some(pokemon => pokemon.id === id);
 }
+
+/* ---------- Sugestões (reutilizável) ---------- */
+
+function criarAutocomplete(input, lista, obterItens, aoEscolher) {
+    let indiceAtivo = -1;
+
+    function esconder() {
+        lista.hidden = true;
+        lista.innerHTML = '';
+        indiceAtivo = -1;
+    }
+
+    function escolher(valor) {
+        input.value = valor;
+        esconder();
+        aoEscolher();
+        input.focus();
+    }
+
+    function mostrar() {
+        const termo = input.value.trim().toLowerCase();
+
+        const itens = obterItens()
+            .filter(item => item.toLowerCase().includes(termo) && item.toLowerCase() !== termo)
+            .slice(0, MAX_SUGESTOES);
+
+        if (itens.length === 0) {
+            esconder();
+            return;
+        }
+
+        lista.innerHTML = '';
+        indiceAtivo = -1;
+
+        itens.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            // mousedown (antes do blur) para o clique funcionar
+            li.addEventListener('mousedown', function (event) {
+                event.preventDefault();
+                escolher(item);
+            });
+            lista.append(li);
+        });
+
+        lista.hidden = false;
+    }
+
+    function mover(direcao) {
+        const lis = Array.from(lista.querySelectorAll('li'));
+
+        if (lis.length === 0) {
+            return;
+        }
+
+        lis.forEach(li => li.classList.remove('ativo'));
+        indiceAtivo = (indiceAtivo + direcao + lis.length) % lis.length;
+        lis[indiceAtivo].classList.add('ativo');
+    }
+
+    input.addEventListener('focus', mostrar);
+    input.addEventListener('blur', esconder);
+
+    input.addEventListener('keydown', function (event) {
+        if (lista.hidden) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            mover(1);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            mover(-1);
+        } else if (event.key === 'Enter' && indiceAtivo >= 0) {
+            event.preventDefault();
+            escolher(lista.querySelectorAll('li')[indiceAtivo].textContent);
+        } else if (event.key === 'Escape') {
+            esconder();
+        }
+    });
+
+    return { mostrar, esconder };
+}
+
+const autocompletePokemon = criarAutocomplete(
+    nome,
+    sugestoesPokemon,
+    () => recentes,
+    () => nome.dispatchEvent(new Event('input'))
+);
+
+const autocompleteTreinador = criarAutocomplete(
+    treinador,
+    sugestoesTreinador,
+    () => treinadores,
+    () => {}
+);
 
 /* ---------- Cards ---------- */
 
@@ -199,6 +323,8 @@ function limparCampos() {
     pokemonEncontrado = null;
     requisicaoAtual++;
     clearTimeout(debounceBusca);
+    autocompletePokemon.esconder();
+    autocompleteTreinador.esconder();
     mostrarFeedback('');
 }
 
@@ -260,6 +386,8 @@ nome.addEventListener('input', function () {
     requisicaoAtual++;
     pokemonEncontrado = null;
 
+    autocompletePokemon.mostrar();
+
     if (valor.length < 3) {
         tipo.value = '';
         cp.value = '';
@@ -291,8 +419,22 @@ nome.addEventListener('input', function () {
         tipo.value = extrairTipoPokemon(dadosApi).join(', ');
         cp.value = extrairCombatPower(dadosApi);
 
+        salvarRecente(dadosApi.name);
+        autocompletePokemon.esconder();
+
         mostrarFeedback('Pokémon encontrado!', COR_SUCESSO);
     }, 500);
+});
+
+treinador.addEventListener('input', autocompleteTreinador.mostrar);
+
+// Salva o treinador ao sair do campo, mesmo sem cadastrar
+treinador.addEventListener('change', function () {
+    const valor = treinador.value.trim();
+
+    if (valor) {
+        salvarTreinador(valor);
+    }
 });
 
 form.addEventListener('submit', function (event) {
@@ -304,6 +446,10 @@ form.addEventListener('submit', function (event) {
         mostrarFeedback('Informe o nome do treinador.', COR_ERRO);
         return;
     }
+
+    // Salva o treinador mesmo que o cadastro seja bloqueado depois
+    salvarTreinador(nomeTreinador);
+    autocompleteTreinador.esconder();
 
     if (!pokemonEncontrado || nome.value.toLowerCase() !== pokemonEncontrado.name) {
         mostrarFeedback('Busque um Pokémon válido antes de cadastrar.', COR_ERRO);
@@ -334,5 +480,7 @@ limparArena.addEventListener('click', esvaziarArena);
 
 /* ---------- Início ---------- */
 
-arena = carregarArena();
+arena = lerStorage(CHAVE_STORAGE);
+recentes = lerStorage(CHAVE_RECENTES);
+treinadores = lerStorage(CHAVE_TREINADORES);
 renderizarArena();

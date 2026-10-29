@@ -174,6 +174,47 @@ button:focus-visible {
     min-height: 1.2em;
 }
 
+/* ---------- Sugestões (recentes) ---------- */
+
+.campo-busca {
+    position: relative;
+}
+
+.sugestoes {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 4px 0 0;
+    padding: 4px;
+    list-style: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    z-index: 20;
+    overflow: hidden;
+}
+
+.sugestoes li {
+    padding: 8px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-color);
+}
+
+#sugestoes li {
+    text-transform: capitalize;
+}
+
+.sugestoes li:hover,
+.sugestoes li.ativo {
+    background: var(--accent);
+    color: #fff;
+}
+
+/* ---------- Cards ---------- */
+
 .arena-grid,
 #lista-cards {
     display: grid;
