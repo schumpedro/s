@@ -48,6 +48,11 @@ function extrairCombatPower(dadosPokemon) {
     return dadosPokemon?.base_experience ?? 0;
 }
 
+function pokemonJaNaArena(id) {
+    return Array.from(listaCards.querySelectorAll('.card-pokemon'))
+        .some(card => card.dataset.id === String(id));
+}
+
 function aplicarEstiloPorTipo(card, tipos) {
     const cores = {
         fire: '#e25822',
@@ -76,9 +81,10 @@ function aplicarEstiloPorTipo(card, tipos) {
     card.style.background = `linear-gradient(145deg, ${cor}33, #111624 75%)`;
 }
 
-function criarCardPokemon(nomePokemon, imagem, tipos, combatPower, nomeTreinador) {
+function criarCardPokemon(id, nomePokemon, imagem, tipos, combatPower, nomeTreinador) {
     const card = document.createElement('div');
     card.className = 'card-pokemon';
+    card.dataset.id = id;
 
     aplicarEstiloPorTipo(card, tipos);
 
@@ -191,7 +197,13 @@ form.addEventListener('submit', function (event) {
         return;
     }
 
+    if (pokemonJaNaArena(pokemonEncontrado.id)) {
+        mostrarFeedback('Esse Pokémon já está na arena.', '#f87171');
+        return;
+    }
+
     criarCardPokemon(
+        pokemonEncontrado.id,
         pokemonEncontrado.name,
         extrairImagemPokemon(pokemonEncontrado),
         extrairTipoPokemon(pokemonEncontrado),
